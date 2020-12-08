@@ -15,11 +15,22 @@ renderer = pystache.Renderer()
         
 for msg in Message.select(Message).order_by(Message.post_date.desc()):
     msgs_dict['items'].append(model_to_dict(msg))
-    channel_html_dir = out_html_dir + msg.channel + '/'
-    os.makedirs(channel_html_dir, exist_ok=True)
-    with open(channel_html_dir + str(msg.msg_id) + '.html', 'w') as f:
-        item_html = renderer.render_path('item.mustache', msg)
-        f.write(item_html)
+    msg_item = {}
+    if msg.channel == 'web_cpc':
+        msg_item.update({'is_cpc': True})
+    if msg.channel == 'bmpi365':
+        msg_item.update({'is_bmpi': True})
+    if msg.channel == 'improve365':
+        msg_item.update({'is_i365': True})
+    if (not msg.is_render):
+        channel_html_dir = out_html_dir + msg.channel + '/'
+        os.makedirs(channel_html_dir, exist_ok=True)
+        with open(channel_html_dir + str(msg.msg_id) + '.html', 'w') as f:
+            msg_item.update(msg.__dict__['__data__'])
+            item_html = renderer.render_path('item.mustache', msg_item)
+            f.write(item_html)
+        msg.is_render = True
+        msg.save()
 
 msgs_dict['items'] = msgs_dict['items'][:20]
 msgs_dict['is_home'] = True
